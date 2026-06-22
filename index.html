@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Operating Envelope — Field-Deployable OpenFlexure Microscope</title>
+<meta name="description" content="A robotics-engineering project measuring the operating envelope of a low-cost open-source microscope — the range of temperature and vibration over which it still meets its targets — and showing how targeted fabrication widens it." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#F3F4F0;
+    --paper-2:#EAECE5;
+    --card:#FBFBF9;
+    --ink:#15191A;
+    --ink-soft:#4C5450;
+    --ink-faint:#878F89;
+    --steel:#2F4858;
+    --steel-soft:#5A7689;
+    --signal:#DD5B1E;
+    --signal-deep:#B8430D;
+    --signal-soft:#F6E0D2;
+    --line:#D8DBD2;
+    --line-2:#C7CBC0;
+    --dark:#191F1C;
+    --dark-line:#33403A;
+    --grid:#E2E4DC;
+    --disp:'Space Grotesk',system-ui,sans-serif;
+    --body:'Hanken Grotesk',system-ui,sans-serif;
+    --mono:'Space Mono',ui-monospace,monospace;
+    --maxw:1180px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;}
+  h1,h2,h3{font-family:var(--disp);font-weight:600;line-height:1.06;margin:0;letter-spacing:-.01em;}
+  p{margin:0 0 1em;}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px;}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--signal);font-weight:700;display:inline-flex;align-items:center;gap:.7em;}
+  .eyebrow::before{content:"";width:26px;height:2px;background:var(--signal);display:inline-block;}
+
+  header{position:sticky;top:0;z-index:50;background:rgba(243,244,240,.85);backdrop-filter:saturate(150%) blur(9px);border-bottom:1px solid var(--line);}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:64px;}
+  .brand{display:flex;align-items:center;gap:11px;font-family:var(--mono);font-weight:700;font-size:13.5px;letter-spacing:.02em;}
+  .brand svg{width:22px;height:22px;flex:none;}
+  .navlinks{display:flex;gap:24px;font-size:14.5px;color:var(--ink-soft);}
+  .navlinks a{padding:4px 0;transition:color .2s;}
+  .navlinks a:hover{color:var(--signal);}
+  .gh{font-family:var(--mono);font-size:12.5px;font-weight:700;border:1.5px solid var(--ink);padding:8px 14px;display:inline-flex;align-items:center;gap:8px;transition:.2s;}
+  .gh:hover{background:var(--ink);color:var(--paper);}
+  .menu-btn{display:none;background:none;border:0;font-family:var(--mono);font-size:13px;cursor:pointer;color:var(--ink);}
+
+  .hero{position:relative;padding:74px 0 60px;overflow:hidden;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:32px 32px;background-position:center top;}
+  .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent,var(--paper) 86%);pointer-events:none;}
+  .hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:1.02fr .98fr;gap:50px;align-items:center;}
+  .tagrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
+  .tagrow span{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line-2);background:var(--card);padding:5px 10px;color:var(--ink-soft);}
+  .hero h1{font-size:clamp(34px,5vw,58px);margin:.3em 0 .45em;letter-spacing:-.025em;}
+  .hero h1 em{font-style:normal;color:var(--signal);}
+  .lede{font-size:18.5px;color:var(--ink-soft);max-width:31em;}
+  .hero-cta{display:flex;flex-wrap:wrap;gap:13px;margin-top:28px;}
+  .btn{font-family:var(--mono);font-size:13px;font-weight:700;padding:12px 20px;display:inline-flex;align-items:center;gap:9px;transition:transform .15s,background .2s,color .2s,border-color .2s;}
+  .btn-solid{background:var(--signal);color:#fff;}
+  .btn-solid:hover{background:var(--signal-deep);transform:translateY(-1px);}
+  .btn-ghost{border:1.5px solid var(--line-2);color:var(--ink-soft);background:var(--card);}
+  .btn-ghost:hover{border-color:var(--signal);color:var(--signal);}
+
+  .envfig{position:relative;background:var(--card);border:1px solid var(--line);box-shadow:0 24px 54px -30px rgba(47,72,88,.5);padding:18px 18px 14px;}
+  .envfig .cap{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.03em;margin-bottom:8px;}
+  .envfig svg{display:block;width:100%;height:auto;}
+  .legend{display:flex;gap:18px;margin-top:8px;font-family:var(--mono);font-size:11px;color:var(--ink-soft);flex-wrap:wrap;}
+  .legend i{display:inline-block;width:18px;height:0;border-top-width:2px;border-top-style:solid;margin-right:6px;vertical-align:middle;}
+
+  section{padding:84px 0;border-top:1px solid var(--line);}
+  .section-head{max-width:52em;margin-bottom:42px;}
+  .section-head h2{font-size:clamp(26px,3.6vw,38px);margin:.4em 0 .35em;}
+  .section-head p{font-size:18px;color:var(--ink-soft);}
+  .alt{background:var(--paper-2);}
+
+  .concept{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
+  .cc{background:var(--card);border:1px solid var(--line);padding:24px;position:relative;}
+  .cc .lab{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--signal);font-weight:700;}
+  .cc h3{font-size:18px;margin:12px 0 8px;}
+  .cc p{font-size:14.5px;color:var(--ink-soft);margin:0;}
+
+  .loop{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;counter-reset:s;}
+  .lp{position:relative;background:var(--card);border:1px solid var(--line);border-top:3px solid var(--signal);padding:26px;}
+  .lp .n{counter-increment:s;font-family:var(--mono);font-weight:700;color:var(--signal);font-size:13px;letter-spacing:.06em;}
+  .lp .n::before{content:"ID-" counter(s) " · ";}
+  .lp h3{font-size:21px;margin:10px 0 10px;}
+  .lp p{font-size:15px;color:var(--ink-soft);margin:0 0 14px;}
+  .lp .art{font-family:var(--mono);font-size:12px;color:var(--steel);border-top:1px dashed var(--line-2);padding-top:12px;}
+  .lp .art b{color:var(--ink);}
+  .loopjoin{margin-top:18px;font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);}
+  .loopjoin b{color:var(--signal);}
+
+  .drow{display:grid;grid-template-columns:84px 1fr;gap:24px;padding:24px 0;border-bottom:1px solid var(--line);}
+  .drow:last-child{border-bottom:0;}
+  .drow .tag{font-family:var(--mono);font-weight:700;color:var(--signal);font-size:15px;}
+  .drow .tag span{display:block;font-size:11px;color:var(--ink-faint);font-weight:400;margin-top:4px;}
+  .drow h3{font-size:20px;margin:0 0 8px;}
+  .drow p{font-size:15px;color:var(--ink-soft);margin:0 0 10px;}
+  .drow .files{font-family:var(--mono);font-size:12px;color:var(--steel);}
+
+  .dark{background:var(--dark);color:#E8EBE6;border-top:1px solid var(--dark-line);}
+  .dark .eyebrow{color:var(--signal);}
+  .dark .section-head h2{color:#fff;}
+  .dark .section-head p{color:#AEB6AE;}
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .tier{border:1px solid var(--dark-line);padding:26px;background:#1F2622;}
+  .tier.mid{border-color:var(--signal);background:#23211C;}
+  .tier .lv{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;}
+  .tier.min .lv{color:var(--steel-soft);}
+  .tier.mid .lv{color:var(--signal);}
+  .tier.max .lv{color:#E6C56A;}
+  .tier h3{color:#fff;font-size:22px;margin:8px 0 14px;}
+  .tier ul{list-style:none;margin:0;padding:0;}
+  .tier li{font-size:14px;color:#C3CAC2;padding:8px 0 8px 18px;position:relative;border-top:1px solid var(--dark-line);}
+  .tier li:first-child{border-top:0;}
+  .tier li::before{content:"+";position:absolute;left:0;color:var(--signal);font-family:var(--mono);font-weight:700;}
+  .tier .base li::before{content:"›";color:var(--steel-soft);}
+  .tiernote{margin-top:22px;font-family:var(--mono);font-size:12.5px;color:#8E968E;}
+
+  .phases{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:34px;}
+  .phase{font-family:var(--mono);font-size:12.5px;border:1px solid var(--line-2);background:var(--card);padding:7px 12px;color:var(--ink-soft);}
+  .phase b{color:var(--signal);}
+  .weeks{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .wk{display:flex;gap:16px;background:var(--card);border:1px solid var(--line);padding:16px 18px;}
+  .wk .num{font-family:var(--mono);font-weight:700;color:var(--steel);font-size:13px;flex:none;width:64px;}
+  .wk .num em{font-style:normal;color:var(--signal);}
+  .wk .d strong{display:block;font-size:15px;margin-bottom:2px;}
+  .wk .d span{font-size:13.5px;color:var(--ink-soft);}
+  .wk.sub{border-left:3px solid var(--signal);}
+
+  .grade{display:grid;grid-template-columns:1.1fr 1fr;gap:40px;align-items:start;}
+  .weights{background:var(--card);border:1px solid var(--line);padding:26px;}
+  .weights h3{font-family:var(--mono);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);font-weight:700;margin-bottom:18px;}
+  .bar{margin-bottom:14px;}
+  .bar .row{display:flex;justify-content:space-between;font-size:14.5px;margin-bottom:5px;}
+  .bar .row b{font-family:var(--mono);}
+  .bar .track{height:9px;background:var(--paper-2);overflow:hidden;}
+  .bar .fill{height:100%;background:var(--signal);}
+  .bar.final .fill{background:var(--steel);}
+  .rubric{font-size:14.5px;}
+  .rubric h3{font-family:var(--mono);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);font-weight:700;margin-bottom:14px;}
+  .rubric ul{list-style:none;margin:0;padding:0;}
+  .rubric li{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--line);color:var(--ink-soft);}
+  .rubric li:last-child{border-bottom:0;}
+  .rubric li b{font-family:var(--mono);color:var(--steel);flex:none;}
+
+  .bom{width:100%;border-collapse:collapse;font-size:14.5px;background:var(--card);border:1px solid var(--line);}
+  .bom th{text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);font-weight:700;padding:13px 16px;background:var(--paper-2);border-bottom:1px solid var(--line);}
+  .bom td{padding:12px 16px;border-bottom:1px solid var(--line);color:var(--ink-soft);}
+  .bom tr:last-child td{border-bottom:0;}
+  .bom td.cost{font-family:var(--mono);text-align:right;color:var(--ink);white-space:nowrap;}
+  .bom td.ph{font-family:var(--mono);font-size:11px;color:var(--signal);}
+  .bom strong{color:var(--ink);}
+  .bom .total td{background:var(--dark);color:#fff;font-family:var(--mono);font-weight:700;border-bottom:0;}
+  .bom .total td.cost{color:var(--signal);}
+  .bomnote{font-family:var(--mono);font-size:12px;color:var(--ink-faint);margin-top:12px;}
+
+  footer{background:var(--dark);color:#AEB6AE;padding:54px 0 36px;border-top:1px solid var(--dark-line);}
+  .foot{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:30px;}
+  .foot a.ext::after{content:" ↗";color:var(--ink-faint);font-size:11px;}
+  .foot h3{font-family:var(--mono);font-size:13px;color:#fff;font-weight:700;margin-bottom:14px;}
+  .foot a{display:block;font-size:14px;margin-bottom:7px;color:#AEB6AE;transition:color .2s;}
+  .foot a:hover{color:var(--signal);}
+  .foot .lead{max-width:26em;font-size:14px;line-height:1.6;}
+  .meta-line{font-family:var(--mono);font-size:12.5px;color:#C3CAC2;margin-top:14px;line-height:1.9;}
+  .meta-line b{color:#fff;}
+  .fine{margin-top:32px;border-top:1px solid var(--dark-line);padding-top:18px;font-family:var(--mono);font-size:11.5px;color:#79817A;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+
+  .reveal{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease;}
+  .reveal.in{opacity:1;transform:none;}
+
+  @media(max-width:900px){
+    .hero-grid{grid-template-columns:1fr;gap:38px;}
+    .envfig{order:-1;}
+    .navlinks,.gh{display:none;}
+    .menu-btn{display:block;}
+    .concept{grid-template-columns:1fr 1fr;}
+    .loop,.tiers{grid-template-columns:1fr;}
+    .weeks{grid-template-columns:1fr;}
+    .grade{grid-template-columns:1fr;gap:30px;}
+    .foot{grid-template-columns:1fr;}
+  }
+  @media(max-width:560px){
+    .concept{grid-template-columns:1fr;}
+    .drow{grid-template-columns:1fr;gap:8px;}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none !important;transition:none !important;}
+    .reveal{opacity:1;transform:none;}
+    html{scroll-behavior:auto;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a href="#top" class="brand">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="2.2" y="2.2" width="19.6" height="19.6" stroke="#2F4858" stroke-width="1.4"/>
+        <path d="M3 19 C7 19 9 9 13 9 S19 5 21 5" stroke="#5A7689" stroke-width="1.4" fill="none"/>
+        <path d="M3 19 C9 19 11 5 16 5 S21 3 21 3" stroke="#DD5B1E" stroke-width="1.7" fill="none"/>
+      </svg>
+      ENVELOPE&nbsp;/&nbsp;OFM
+    </a>
+    <nav class="navlinks">
+      <a href="#approach">Approach</a>
+      <a href="#loop">Deliverables</a>
+      <a href="#endpoints">Endpoints</a>
+      <a href="#timeline">Timeline</a>
+      <a href="#grading">Grading</a>
+      <a href="#materials">Materials</a>
+    </nav>
+    <a class="gh" href="#footer">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.93-.89-1.18-.89-1.18-.73-.5.05-.49.05-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+      GitHub
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Jump to sections">Sections ↓</button>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero" style="border-top:0;">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow">Robotics MSE · OpenFlexure Platform</span>
+        <h1>How far from the lab bench can a microscope go and still <em>hold focus?</em></h1>
+        <p class="lede">A field-deployable open-source microscope is really a three-axis robotic stage. This project measures its <strong>operating envelope</strong> — the range of temperature and vibration over which it still meets its performance targets — then builds and tests fabrication that pushes that boundary outward.</p>
+        <div class="tagrow">
+          <span>PRECISION METROLOGY</span>
+          <span>MECHANICAL FABRICATION</span>
+          <span>THERMAL COMPENSATION</span>
+        </div>
+        <div class="hero-cta">
+          <a class="btn btn-solid" href="#approach">The envelope approach</a>
+          <a class="btn btn-ghost" href="#loop">Three deliverables</a>
+        </div>
+      </div>
+
+      <figure class="envfig" aria-label="Operating-envelope plot: a modified boundary extends beyond the stock boundary across temperature and vibration">
+        <div class="cap"><span>OPERATING ENVELOPE</span><span id="figStatus">STOCK → MODIFIED</span></div>
+        <svg viewBox="0 0 440 320" role="img">
+          <g stroke="#E2E4DC" stroke-width="1">
+            <line x1="60" y1="20" x2="60" y2="270"/>
+            <line x1="60" y1="270" x2="420" y2="270"/>
+            <line x1="150" y1="20" x2="150" y2="270"/>
+            <line x1="240" y1="20" x2="240" y2="270"/>
+            <line x1="330" y1="20" x2="330" y2="270"/>
+            <line x1="60" y1="200" x2="420" y2="200"/>
+            <line x1="60" y1="130" x2="420" y2="130"/>
+            <line x1="60" y1="60" x2="420" y2="60"/>
+          </g>
+          <text x="240" y="300" text-anchor="middle" font-family="Space Mono, monospace" font-size="12" fill="#878F89">TEMPERATURE  (°C, and rate of change)  →</text>
+          <text x="20" y="150" text-anchor="middle" font-family="Space Mono, monospace" font-size="12" fill="#878F89" transform="rotate(-90 20 150)">VIBRATION  →</text>
+          <path id="gap" d="M60,270 L60,150 C150,150 175,95 250,80 C320,66 360,55 420,48 L420,270 Z" fill="#DD5B1E" opacity="0.10"/>
+          <path id="stock" d="M60,270 L60,185 C120,185 150,150 205,140 C260,130 290,128 330,126 L330,270 Z" fill="#2F4858" opacity="0.07"/>
+          <path d="M60,185 C120,185 150,150 205,140 C260,130 290,128 330,126" stroke="#2F4858" stroke-width="2" fill="none" stroke-dasharray="4 4"/>
+          <path id="mod" d="M60,150 C150,150 175,95 250,80 C320,66 360,55 420,48" stroke="#DD5B1E" stroke-width="2.5" fill="none"/>
+          <text x="68" y="36" font-family="Space Mono, monospace" font-size="10.5" fill="#B8430D">PERFORMANCE BUDGET = "still working"</text>
+          <circle cx="330" cy="126" r="3.5" fill="#2F4858"/>
+          <circle cx="420" cy="48" r="3.5" fill="#DD5B1E"/>
+          <text x="324" y="118" text-anchor="end" font-family="Space Mono, monospace" font-size="10" fill="#2F4858">stock</text>
+          <text x="414" y="40" text-anchor="end" font-family="Space Mono, monospace" font-size="10" fill="#B8430D">modified</text>
+        </svg>
+        <div class="legend">
+          <span><i style="border-color:#2F4858;border-top-style:dashed;"></i>stock boundary</span>
+          <span><i style="border-color:#DD5B1E;"></i>modified boundary</span>
+          <span><i style="border-color:#DD5B1E;opacity:.4;"></i>the contribution</span>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <section id="approach">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Design approach</span>
+        <h2>You can't design for field conditions you don't know. So measure the envelope instead.</h2>
+        <p>Normally a field instrument is designed against a known spec — the temperatures, vibration, and handling it must survive. Here that spec doesn't exist. Rather than guess, the project never claims the microscope "works in the field." It makes a measured statement: it meets its targets up to certain conditions, and fails beyond them.</p>
+      </div>
+      <div class="concept">
+        <div class="cc reveal">
+          <div class="lab">The ceiling</div>
+          <h3>Performance budget</h3>
+          <p>The pass/fail lines that define "still working" — the stage returning within tolerance, focus error inside the depth of field, a scan that completes. Fixed by the imaging task, not the field.</p>
+        </div>
+        <div class="cc reveal">
+          <div class="lab">The axes</div>
+          <h3>Environmental stress</h3>
+          <p>The conditions deliberately turned up and down on the bench: temperature, its rate of change, and vibration. Dust, humidity, and unreliable power are named and left out, honestly.</p>
+        </div>
+        <div class="cc reveal">
+          <div class="lab">The deliverable</div>
+          <h3>Envelope boundary</h3>
+          <p>For each axis, push the stress until a target is crossed and record where. Measured for the stock microscope, then again for the modified one — the gap between them is the contribution.</p>
+        </div>
+        <div class="cc reveal">
+          <div class="lab">The reality check</div>
+          <h3>Anchoring</h3>
+          <p>The measured envelope is compared against rough real-world ranges from published climate data and field reports — used to sanity-check coverage, never as design targets.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="loop" class="alt">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">The engineering loop</span>
+        <h2>Diagnose the problem, fix it, then make it hold up</h2>
+        <p>Three interim deliverables follow one loop. Each produces matching before-and-after numbers using the same procedures, so every later claim is judged against the baseline that came before it.</p>
+      </div>
+      <div class="loop">
+        <div class="lp reveal">
+          <div class="n"></div>
+          <h3>Baseline the stock stage</h3>
+          <p>Measure repeatability, backlash, focus-axis accuracy, and how motor steps map to micrometres and pixels — the "before" picture every improvement is measured against.</p>
+          <div class="art"><b>Out:</b> baseline report · raw data (CSV) · calibration record</div>
+        </div>
+        <div class="lp reveal">
+          <div class="n"></div>
+          <h3>Fix the Z-axis</h3>
+          <p>Design, build, and fit one intervention to the focus axis — a mechanical fix, a position encoder, or both — chosen to address the biggest weakness the baseline revealed.</p>
+          <div class="art"><b>Out:</b> design report · CAD (source + STL) · BOM · before/after data</div>
+        </div>
+        <div class="lp reveal">
+          <div class="n"></div>
+          <h3>Compensate &amp; integrate</h3>
+          <p>Instrument the stage with temperature sensors, model how it drifts with heat, cancel most of that drift in software, and prove it with one full automated scan end to end.</p>
+          <div class="art"><b>Out:</b> drift report · sensor-mount CAD · model code · operating notes</div>
+        </div>
+      </div>
+      <p class="loopjoin">The <b>final report</b> ties all three into a single engineering story — not three reports stapled together — and carries the most weight.</p>
+    </div>
+  </section>
+
+  <section id="deliverables">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">What each deliverable contains</span>
+        <h2>Four deliverables, one repository</h2>
+        <p>Every claim is backed by before-and-after evidence and honest error bars; every fabricated part ships with files clear enough that someone else could rebuild it.</p>
+      </div>
+      <div class="reveal">
+        <div class="drow">
+          <div class="tag">ID-1<span>End of Wk 5</span></div>
+          <div>
+            <h3>Baseline performance of the stock microscope</h3>
+            <p>Send the XY stage to target positions in random order and measure how closely it returns, including direction-dependent backlash. Step Z to find best focus, comparing image-sharpness metrics (Laplacian variance, Brenner, Tenengrad, normalised variance) to see which is most reliable on this hardware. Record the step→mm→pixel conversions.</p>
+            <div class="files">≈ 5–8 pp PDF · results table vs targets · raw CSV · analysis code</div>
+          </div>
+        </div>
+        <div class="drow">
+          <div class="tag">ID-2<span>End of Wk 9</span></div>
+          <div>
+            <h3>Focused fabrication intervention on the Z-axis</h3>
+            <p>The Z axis gets the attention because the tightest target is on it. Pick a mechanical fix (anti-backlash preload spring, counterbalance), a sensor fix (linear encoder for an independent position reading), or both — then re-run the ID-1 Z tests on the changed instrument for matching before/after numbers.</p>
+            <div class="files">design report PDF · editable CAD + STL · parts list · assembly steps</div>
+          </div>
+        </div>
+        <div class="drow">
+          <div class="tag">ID-3<span>End of Wk 11</span></div>
+          <div>
+            <h3>Thermal monitoring, compensation &amp; integration</h3>
+            <p>Mount temperature sensors where thermal expansion most moves the stage, log temperature and drift together over a one-hour scan, fit a correction model, and show the corrected drift is smaller than the uncorrected. Closes with a full automated scan proving the three deliverables work as one system.</p>
+            <div class="files">report PDF · sensor-mount CAD + STL · logging CSV · model code · objective-swap procedure</div>
+          </div>
+        </div>
+        <div class="drow">
+          <div class="tag">D4<span>End of Wk 12</span></div>
+          <div>
+            <h3>Final report — the synthesis</h3>
+            <p>One narrative: the question raised by deploying in unknown conditions, what the baseline found, which fix was chosen and why, the evidence it worked, the limits hit along the way, and what should come next — with a complete archive that lets someone else reproduce or build on the work.</p>
+            <div class="files">data · code · CAD · BOM · calibration steps · operating manual</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="endpoints" class="dark">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Three acceptable finish lines</span>
+        <h2>Minimum, Target, Maximum — scope that grows</h2>
+        <p>Each endpoint sets how much work the three interim deliverables involve. Target includes everything in Minimum and adds to it; Maximum includes everything in Target and adds more. The final report is required at all three.</p>
+      </div>
+      <div class="tiers">
+        <div class="tier min reveal">
+          <div class="lv">Minimum</div>
+          <h3>Diagnose &amp; fix once</h3>
+          <ul class="base">
+            <li>30-position repeatability at one site; two sharpness measures across three sites</li>
+            <li>One Z-axis fix (mechanical or sensor) with before/after numbers</li>
+            <li>Two temperature sensors, one 60-min session, post-hoc correction, one full scan</li>
+          </ul>
+        </div>
+        <div class="tier mid reveal">
+          <div class="lv">Target</div>
+          <h3>Add rigour &amp; ablation</h3>
+          <ul>
+            <li>Repeatability at 2–3 sites with cross-axis check; third metric vs z-stack ground truth</li>
+            <li>Ablation of a combined fix; statistical tests with error bars</li>
+            <li>Third sensor; multiple sessions; multi-input model; objective swap over 5+ cycles</li>
+          </ul>
+        </div>
+        <div class="tier max reveal">
+          <div class="lv">Maximum</div>
+          <h3>Independent &amp; live</h3>
+          <ul>
+            <li>Independent Z measurement; four metrics in full; image-based vibration breakdown</li>
+            <li>Combined mechanical + sensor fix; accelerometer resonances before/after</li>
+            <li>Heater-driven test point; live in-scan compensation; an independent-user handoff test</li>
+          </ul>
+        </div>
+      </div>
+      <p class="tiernote">↻ The final report is required at every endpoint — it ties together whatever interim work was completed.</p>
+    </div>
+  </section>
+
+  <section id="timeline">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Twelve weeks · May 18 – Aug 13, 2026</span>
+        <h2>Setup, then the loop, then synthesis</h2>
+        <p>Week one has already passed at the time of the agreement. Weeks 1–2 are reading and procurement (long-lead encoders and sensors are ordered early); the remaining ten weeks run the three deliverables and the final report.</p>
+      </div>
+      <div class="phases reveal">
+        <span class="phase"><b>W1–2</b> Setup &amp; Procurement</span>
+        <span class="phase"><b>W3–5</b> ID-1 Baseline</span>
+        <span class="phase"><b>W6–9</b> ID-2 Fabrication</span>
+        <span class="phase"><b>W10–11</b> ID-3 Thermal</span>
+        <span class="phase"><b>W12</b> Final</span>
+      </div>
+      <div class="weeks reveal">
+        <div class="wk"><div class="num">W1–2</div><div class="d"><strong>Read &amp; procure</strong><span>OpenFlexure handbook, literature review, place all orders, initialise the Git repository.</span></div></div>
+        <div class="wk"><div class="num">W3</div><div class="d"><strong>Microscope operational</strong><span>Assemble, run the calibration wizard, first stitched mosaic, begin coordinate-frame docs.</span></div></div>
+        <div class="wk"><div class="num">W4</div><div class="d"><strong>XY baseline</strong><span>Fiducial grid, repeatability run, backlash (+Δ vs −Δ), between-run variability.</span></div></div>
+        <div class="wk sub"><div class="num"><em>W5</em></div><div class="d"><strong>ID-1 submitted</strong><span>Z-stacks, sharpness metrics benchmarked, baseline table vs targets, intervention candidates flagged.</span></div></div>
+        <div class="wk"><div class="num">W6</div><div class="d"><strong>Choose &amp; design</strong><span>Confirm intervention path with advisor; CAD the Z-axis brackets and mounts; first prints.</span></div></div>
+        <div class="wk"><div class="num">W7</div><div class="d"><strong>Fabricate &amp; fit</strong><span>Build parts, assemble into the microscope, integrate encoder or install preload/counterbalance.</span></div></div>
+        <div class="wk"><div class="num">W8</div><div class="d"><strong>Re-test Z</strong><span>Re-run the ID-1 focus protocol on the modified stage; begin paired before/after analysis.</span></div></div>
+        <div class="wk sub"><div class="num"><em>W9</em></div><div class="d"><strong>ID-2 submitted</strong><span>Paired stats with uncertainty, ablation if required, failure modes documented, report committed.</span></div></div>
+        <div class="wk"><div class="num">W10</div><div class="d"><strong>Instrument for heat</strong><span>Print sensor mounts, calibrate against a reference thermometer, set up position+temperature logging.</span></div></div>
+        <div class="wk sub"><div class="num"><em>W11</em></div><div class="d"><strong>ID-3 submitted</strong><span>Thermal sessions, compensation model, (Max: heater + live correction + handoff), end-to-end scan.</span></div></div>
+        <div class="wk sub" style="grid-column:1 / -1;"><div class="num"><em>W12</em></div><div class="d"><strong>Final report submitted</strong><span>Synthesise ID-1→ID-2→ID-3 into one engineering narrative, complete the operating manual, tag the repository v1.0, final supervision meeting.</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="grading" class="alt">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">How the work is judged</span>
+        <h2>The final report carries the most weight</h2>
+        <p>The three interim deliverables build the engineering record; the final report is where it all comes together. Each interim deliverable uses the same six-part rubric.</p>
+      </div>
+      <div class="grade">
+        <div class="weights reveal">
+          <h3>Course weighting</h3>
+          <div class="bar"><div class="row"><span>ID-1 · Baseline</span><b>10%</b></div><div class="track"><div class="fill" style="width:10%"></div></div></div>
+          <div class="bar"><div class="row"><span>ID-2 · Fabrication</span><b>10%</b></div><div class="track"><div class="fill" style="width:10%"></div></div></div>
+          <div class="bar"><div class="row"><span>ID-3 · Thermal &amp; integration</span><b>10%</b></div><div class="track"><div class="fill" style="width:10%"></div></div></div>
+          <div class="bar final"><div class="row"><span>Final report · synthesis</span><b>70%</b></div><div class="track"><div class="fill" style="width:70%"></div></div></div>
+        </div>
+        <div class="rubric reveal">
+          <h3>Interim rubric (each deliverable)</h3>
+          <ul>
+            <li><span>Engineering rationale</span><b>20%</b></li>
+            <li><span>Technical execution</span><b>20%</b></li>
+            <li><span>Quantitative analysis</span><b>20%</b></li>
+            <li><span>Evidence-based outcomes</span><b>20%</b></li>
+            <li><span>Documentation &amp; reproducibility</span><b>10%</b></li>
+            <li><span>Integration &amp; engineering judgment</span><b>10%</b></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="materials">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Bill of materials</span>
+        <h2>About $590 in parts</h2>
+        <p>Rough estimates from the project's reference documents. Shipping, taxes, purchasing fees, and optional extras are not included.</p>
+      </div>
+      <table class="bom reveal">
+        <thead><tr><th>Item</th><th>Role</th><th>Phase</th><th style="text-align:right;">Est.</th></tr></thead>
+        <tbody>
+          <tr><td><strong>OpenFlexure motorised kit</strong></td><td>Base instrument: 3-axis flexure stage, Pi, camera, software</td><td class="ph">CORE</td><td class="cost">$250</td></tr>
+          <tr><td>USAF 1951 resolution target</td><td>Spatial reference &amp; autofocus benchmark subject</td><td class="ph">ID-1</td><td class="cost">$45</td></tr>
+          <tr><td>Stage micrometer / fiducial grid</td><td>Ground truth for XY repeatability</td><td class="ph">ID-1</td><td class="cost">$60</td></tr>
+          <tr><td>Histology teaching-slide set</td><td>Feature-dense focus &amp; integration samples</td><td class="ph">ID-1</td><td class="cost">$60</td></tr>
+          <tr><td>Blank slides &amp; coverslips</td><td>Camera-calibration baseline</td><td class="ph">ID-1</td><td class="cost">$20</td></tr>
+          <tr><td>Magnetic linear encoder + strip</td><td>Independent Z position measurement</td><td class="ph">ID-2</td><td class="cost">$40</td></tr>
+          <tr><td>Arduino / breakout + cabling</td><td>Sensor interfacing &amp; logging</td><td class="ph">ID-2</td><td class="cost">$25</td></tr>
+          <tr><td>Springs, brackets, fasteners</td><td>Anti-backlash preload &amp; counterbalance</td><td class="ph">ID-2</td><td class="cost">$20</td></tr>
+          <tr><td>3D-printer filament (PLA, PETG)</td><td>Custom brackets &amp; sensor mounts</td><td class="ph">ID-2/3</td><td class="cost">$30</td></tr>
+          <tr><td>Temperature sensors (DS18B20 ×3)</td><td>Multi-point thermal monitoring</td><td class="ph">ID-3</td><td class="cost">$25</td></tr>
+          <tr><td>MEMS accelerometer (optional)</td><td>Instrumented vibration readout</td><td class="ph">ID-2 MAX</td><td class="cost">$15</td></tr>
+          <tr class="total"><td>Total estimate</td><td>All categories combined</td><td></td><td class="cost">$590</td></tr>
+        </tbody>
+      </table>
+      <p class="bomnote">Learning objectives covered: precision metrology · experimental design &amp; uncertainty · coordinate frames &amp; transformations · mechanical design for precision · sensor integration · empirical compensation · engineering documentation.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer id="footer">
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <h3>ENVELOPE / OFM</h3>
+        <p class="lead">Robotics Engineering for a Field-Deployable Open-Source Microscope: Precision Diagnostics and Mechanical Fabrication on the OpenFlexure Platform.</p>
+        <div class="meta-line">
+          <b>Student</b> &nbsp; Ogedi Asimama-Duruaku<br>
+          <b>Academic advisor</b> &nbsp; Dr. Peter Kazanzides<br>
+          <b>Research advisor</b> &nbsp; Dr. Samson Jarso<br>
+          <b>Additional personnel</b> &nbsp; Dr. Ian Dobbie
+        </div>
+      </div>
+      <div>
+        <h3>PROJECT</h3>
+        <a href="#approach">The envelope approach</a>
+        <a href="#loop">Deliverables</a>
+        <a href="#endpoints">Three endpoints</a>
+        <a href="#timeline">Twelve-week plan</a>
+        <a href="#grading">Grading rubric</a>
+      </div>
+      <div>
+        <h3>COURSE</h3>
+        <div class="meta-line">
+          Robotics MSE · 3 credits<br>
+          Letter grade · elective<br>
+          May 18 – Aug 13, 2026<br>
+          Integrated Imaging Center
+        </div>
+      </div>
+      <div>
+        <h3>OPENFLEXURE PLATFORM</h3>
+        <a class="ext" href="https://openflexure.gitlab.io/microscope-handbook/" target="_blank" rel="noopener">Microscope handbook (v7)</a>
+        <a class="ext" href="https://openflexure.org/projects/microscope/documentation" target="_blank" rel="noopener">Documentation</a>
+        <a class="ext" href="https://openflexure.discourse.group/" target="_blank" rel="noopener">Community forum</a>
+        <a class="ext" href="https://gitlab.com/openflexure" target="_blank" rel="noopener">GitLab repository</a>
+        <a class="ext" href="https://openflexure.org/projects/microscope/build" target="_blank" rel="noopener">Build instructions</a>
+      </div>
+    </div>
+    <div class="fine">
+      <span>Built for GitHub Pages · drop in at repo root, enable Pages</span>
+      <span>Replace # links with your repository &amp; documentation URLs</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var mod = document.getElementById('mod');
+    var gap = document.getElementById('gap');
+    if(!mod) return;
+    if(reduce){ if(gap) gap.style.opacity='0.12'; return; }
+    try{
+      var len = mod.getTotalLength();
+      mod.style.strokeDasharray = len;
+      mod.style.strokeDashoffset = len;
+      if(gap) gap.style.opacity = '0';
+      var started=false;
+      var io = new IntersectionObserver(function(es){
+        es.forEach(function(e){
+          if(e.isIntersecting && !started){
+            started=true;
+            mod.style.transition='stroke-dashoffset 1.5s ease-out';
+            requestAnimationFrame(function(){ mod.style.strokeDashoffset='0'; });
+            if(gap){ gap.style.transition='opacity 1.2s ease .6s'; requestAnimationFrame(function(){ gap.style.opacity='0.12'; }); }
+          }
+        });
+      },{threshold:0.3});
+      io.observe(mod.closest('figure'));
+    }catch(err){ if(gap) gap.style.opacity='0.12'; }
+  })();
+
+  (function(){
+    var els = document.querySelectorAll('.reveal');
+    if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in');});return;}
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target);} });
+    },{threshold:0.12});
+    els.forEach(function(e){io.observe(e);});
+  })();
+
+  document.getElementById('menuBtn').addEventListener('click',function(){
+    var t=document.getElementById('approach'); if(t) t.scrollIntoView({behavior:'smooth'});
+  });
+</script>
+
+</body>
+</html>
